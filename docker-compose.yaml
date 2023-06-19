@@ -1,13 +1,5 @@
 version: "3"
 services:
-  transformation:
-    build:
-      context: ./src/transformation/approach-1
-      dockerfile: Dockerfile
-    container_name: transformation-container
-    depends_on:
-      - table
-
   postgres:
     image: postgres
     container_name: postgres-container
@@ -17,12 +9,12 @@ services:
       POSTGRES_DB: outcome_prediction
     ports:
       - "5432:5432"
-
-  table:
+      
+  transformation:
     build:
-      context: ./src/create_table
+      context: ./src/transformation/approach-1
       dockerfile: Dockerfile
-    container_name: table-container
+    container_name: transformation-container
     depends_on:
       - postgres
 
@@ -34,4 +26,5 @@ services:
     ports:
       - "8000:8000"
     depends_on:
-      - postgres
+      - transformation
+    command: sh -c "sleep 80 && uvicorn api:api --host 0.0.0.0 --port 8000"
