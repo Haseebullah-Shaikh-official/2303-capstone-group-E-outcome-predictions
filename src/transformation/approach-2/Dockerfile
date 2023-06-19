@@ -19,8 +19,11 @@ COPY transform_data.py /app/transform_data.py
 RUN apt-get install -y libpq-dev
 
 # Install Python packages
-COPY requirements.txt /app/requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip3 install -r requirements.txt
 
-# Execute the Python script
-CMD ["spark-submit", "--master", "local", "transform_data.py"]
+# Download PostgreSQL JDBC driver
+RUN wget -P /app https://jdbc.postgresql.org/download/postgresql-42.2.24.jar
+
+# Execute the scheduler file
+CMD ["spark-submit", "--master", "local", "--jars", "/app/postgresql-42.2.24.jar", "transform_data.py"]
