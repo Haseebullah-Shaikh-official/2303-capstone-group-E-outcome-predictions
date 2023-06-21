@@ -15,6 +15,3 @@ COPY . .
 
 # Expose the FastAPI port
 EXPOSE 8000
-
-# Start the FastAPI application
-CMD ["uvicorn", "api:api", "--host", "0.0.0.0", "--port", "8000"]
