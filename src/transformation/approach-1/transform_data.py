@@ -212,14 +212,14 @@ def results_db(outcome_data):
     ).save()
 
 
-def main(data_frame: Dict[str, DataFrame]) -> DataFrame:
+def main(data_frame):
     data_frames = load_data_frames(end_points_list, data_frame)
     outcome_data = transformation(data_frames)
     results_db(outcome_data)
     return outcome_data.show()
 
 
-def schedule_job(data_frame: Dict[str, DataFrame]) -> None:
+def schedule_job(data_frame):
     schedule.every(1).minutes.do(main, data_frame)
     while True:
         schedule.run_pending()
