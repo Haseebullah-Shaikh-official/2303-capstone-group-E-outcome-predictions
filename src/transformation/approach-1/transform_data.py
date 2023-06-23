@@ -1,22 +1,24 @@
-import json
+import logging
+import os
 import time
+from typing import Dict
 
 import requests  # type: ignore
 import schedule
-from pyspark.sql import SparkSession
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import col, count, lit, mean, round, sum, when
 
 
-def load_data_frames(end_points_list):
-    data_frames = {}
-
+def load_data_frames(end_points_list, data_frames):
+    url_link = os.environ.get("URL_LINK")
     for end_point in end_points_list:
         variable_name = f"{end_point}_df"  # Generate a variable name for the df
-        url = f"https://xloop-dummy.herokuapp.com/{end_point}"  # Construct the URL for the API request
+        url = url_link + end_point  # Construct the URL for the API request
         response = requests.get(url)  # Send a GET request to the API
+        spark = SparkSession.builder.getOrCreate()
 
         if response.status_code == 200:
-            json_data = json.loads(response.text)
+            json_data = response.json()
             df = spark.createDataFrame(
                 json_data
             )  # Create a Spark df from the JSON data
@@ -41,7 +43,7 @@ def load_data_frames(end_points_list):
                 data_frames[variable_name] = df
 
         else:
-            print(f"No data returned for endpoint: {end_point}")
+            logging.info(f"No data returned for endpoint: {end_point}")
 
     return data_frames
 
@@ -55,6 +57,20 @@ def rename_columns_names(end_points_list, data_frames):
             data_frames[f"{end_point}_df"] = data_frames[
                 f"{end_point}_df"
             ].withColumnRenamed("value", "rating")
+    return data_frames
+
+
+def df_merge(data_frames):
+    # Perform joins on the DataFrames to create a merged DataFrame
+    merged_df = (
+        data_frames["councillor_df"]
+        .join(data_frames["patient_councillor_df"], "councillor_id")
+        .join(data_frames["appointment_df"], "patient_id")
+        .join(data_frames["rating_df"], "appointment_id")
+        .join(data_frames["price_log_df"], "councillor_id")
+    )
+
+    return merged_df
 
 
 def data_preprocessing(merged_df):
@@ -77,20 +93,7 @@ def data_preprocessing(merged_df):
     return cleaned_df
 
 
-def df_merge(data_frames):
-    # Perform joins on the DataFrames to create a merged DataFrame
-    merged_df = (
-        data_frames["councillor_df"]
-        .join(data_frames["patient_councillor_df"], "councillor_id")
-        .join(data_frames["appointment_df"], "patient_id")
-        .join(data_frames["rating_df"], "appointment_id")
-        .join(data_frames["price_log_df"], "councillor_id")
-    )
-
-    return merged_df
-
-
-def sucess_rate(cleaned_df):
+def success_rate(cleaned_df):
     # Create a new column "appointment_status" based on the "rating" column
     appointment_status_df = cleaned_df.withColumn(
         "appointment_status",
@@ -174,7 +177,7 @@ def appointments_per_treatment(cleaned_df):
 
 
 def outcome_prediction(cleaned_df):
-    success_rate_df = sucess_rate(cleaned_df)
+    success_rate_df = success_rate(cleaned_df)
     duration_df = duration(cleaned_df)
     cost_df = cost(cleaned_df)
     appointments_df = appointments_per_treatment(cleaned_df)
@@ -190,11 +193,10 @@ def outcome_prediction(cleaned_df):
 
 
 def transformation(data_frames):
-    rename_columns_names(end_points_list, data_frames)
+    data_frames = rename_columns_names(end_points_list, data_frames)
     merged_df = df_merge(data_frames)
     cleaned_df = data_preprocessing(merged_df)
     outcome_data = outcome_prediction(cleaned_df)
-
     return outcome_data
 
 
@@ -210,15 +212,29 @@ def results_db(outcome_data):
     ).save()
 
 
-def main():
-    data_frames = load_data_frames(end_points_list)
+def main(data_frame: Dict[str, DataFrame]) -> DataFrame:
+    data_frames = load_data_frames(end_points_list, data_frame)
     outcome_data = transformation(data_frames)
     results_db(outcome_data)
     return outcome_data.show()
 
 
+def schedule_job(data_frame: Dict[str, DataFrame]) -> None:
+    schedule.every(1).minutes.do(main, data_frame)
+    while True:
+        schedule.run_pending()
+        time.sleep(1)
+
+
 if __name__ == "__main__":
-    # Define a list of endpoints
+    # Define a list of endpoints and dfs
+
+    logging.basicConfig(
+        filename="transform_data.log",
+        level=logging.INFO,
+        format="%(asctime)s - %(levelname)s - %(message)s",
+    )
+
     end_points_list = [
         "appointment",
         "patient_councillor",
@@ -226,18 +242,11 @@ if __name__ == "__main__":
         "councillor",
         "rating",
     ]
+
+    data_frame: Dict[str, DataFrame] = {}
+
     # Initialize SparkSession
     spark = SparkSession.builder.getOrCreate()
-    main()
 
-
-def schedule_job():
-    schedule.every(1).minutes.do(main)
-
-    while True:
-        schedule.run_pending()
-        time.sleep(1)
-
-
-# Schedule and run the job
-schedule_job()
+    # Schedule and run the job
+    schedule_job(data_frame)
