@@ -12,6 +12,7 @@ ENV PYSPARK_DRIVER_PYTHON=python3
 # Set working directory
 WORKDIR /app
 
+ENV URL_LINK="https://xloop-dummy.herokuapp.com/"
 # Copy the Python script and data file to the working directory
 COPY transform_data.py /app/transform_data.py
 
