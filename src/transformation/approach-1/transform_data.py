@@ -26,6 +26,7 @@ def load_data_frames(
 
             # Check if the df already exists in the dictionary
             if variable_name in data_frames:
+                logging.info(f"Data frame: {end_point} already exists, adding new data")
                 # Retrieve the maximum timestamp value from the existing df
                 max_timestamp = (
                     data_frames[variable_name]
