@@ -245,8 +245,6 @@ def schedule_job() -> None:
 
 
 if __name__ == "__main__":
-    # Define a list of endpoints and dfs
-
     logging.basicConfig(
         filename="transform_data.log",
         level=logging.INFO,
