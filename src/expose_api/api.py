@@ -42,11 +42,11 @@ def get_data(councillor_id: int) -> dict:
         # Create a dictionary with column names as keys and row values
         data = dict(zip(columns, row))
 
-        # Return the fetched data
+        # Return the fetched data (coucillor details)
         return data
 
     except OperationalError as error:
-        # Handle operational errors related to the database connection and query execution
+        # Handle the operational errors related to the database connection and query execution
         raise HTTPException(status_code=500, detail=str(error)) from error
 
 
