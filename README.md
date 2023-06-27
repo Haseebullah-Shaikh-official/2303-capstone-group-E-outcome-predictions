@@ -12,6 +12,10 @@
 ### to check final results in db
 docker exec -it postgres-container psql -U user outcome_prediction
 
+### Docker compose services: Responsible persons
+docker compsoe file is created by Haseebullah and Hamza Asim (together)
+frequent updates are made due to changes in services
+
 ## References
 https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html
 https://hub.docker.com/_/postgres
