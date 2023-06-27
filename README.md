@@ -7,8 +7,4 @@
 ###### Humza Moeen
 ###### Huzaifa Waseem
 
-### Project details will be updated later 
-
-
-
-
+### Project details will be updated later
