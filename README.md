@@ -10,6 +10,9 @@
 ### Project details will be updated later
 
 ### Transformation approach 03 : Responsible persons and there task
+Huzaifa Waseem has implemented the overall transformation approach 03.
+Humza Asim has added the aps scheduler.
+Huzaifa Waseem and Haseebullah has refactored the code ad fixed the pre-commits.
 
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html
