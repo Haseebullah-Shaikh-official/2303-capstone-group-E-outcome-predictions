@@ -9,7 +9,7 @@
 
 ### Project details will be updated later
 
-### Transformation approach 03 : Responsible persons and there task
+### Transformation approach 02 : Responsible persons and there task
 Hammad Irshad has implemented the overall transformation approach 02.
 Humza Asim has replaced the aps scheduler.
 Haseebullah has refactored the code and fixed the pre-commits.
