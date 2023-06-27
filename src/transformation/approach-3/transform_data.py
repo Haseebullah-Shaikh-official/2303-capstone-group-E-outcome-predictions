@@ -1,4 +1,5 @@
 import logging
+import os
 import time
 from typing import Dict
 
@@ -14,7 +15,7 @@ from pyspark.sql.window import Window
 def load_data_frames(
     end_points_list: list, data_frames: Dict[str, DataFrame], spark: SparkSession
 ) -> Dict[str, DataFrame]:
-    url_link = "https://xloop-dummy.herokuapp.com/"
+    url_link = os.environ.get("URL_LINK")
     for end_point in end_points_list:
         variable_name = f"{end_point}_df"  # Generate a variable name for the df
         url = url_link + end_point  # Construct the URL for the API request
