@@ -15,7 +15,7 @@ services:
       context: ./src/transformation/approach-2
       dockerfile: Dockerfile
     container_name: transformation-container
-
+      
     depends_on:
       - postgres
 
@@ -28,4 +28,3 @@ services:
       - "8000:8000"
     depends_on:
       - transformation
-    command: sh -c "sleep 120 && uvicorn api:api --host 0.0.0.0 --port 8000"

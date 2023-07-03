@@ -7,7 +7,7 @@
 ###### Humza Moeen
 ###### Huzaifa Waseem
 
-### Project details will be updated later
+##### Note: The description of the project is incomplete yet.
 
 ### to check final results in db
 docker exec -it postgres-container psql -U user outcome_prediction
