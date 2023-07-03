@@ -513,7 +513,7 @@ def schedule_job() -> None:
     """
     data_frame: Dict[str, DataFrame] = {}
     scheduler = BackgroundScheduler()
-    scheduler.add_job(main, "interval", seconds=10, args=[data_frame])
+    scheduler.add_job(main, "interval", minutes=2, args=[data_frame])
     scheduler.start()
 
     try:
