@@ -15,6 +15,9 @@ from pyspark.sql.window import Window
 def load_data_frames(
     end_points_list: list, data_frames: Dict[str, DataFrame], spark: SparkSession
 ) -> Dict[str, DataFrame]:
+    """
+    Loads dataframes from API with endpoints and updates the existing data frames.
+    """
     url_link = os.environ.get("URL_LINK")
     for end_point in end_points_list:
         variable_name = f"{end_point}_df"  # Generate a variable name for the df
@@ -30,11 +33,6 @@ def load_data_frames(
             # Check if the df already exists in the dictionary
             if variable_name in data_frames:
                 logging.info(f"Data frame: {end_point} already exists, adding new data")
-
-                if variable_name == "appointment_df":
-                    data_frames[variable_name] = data_frames[
-                        variable_name
-                    ].withColumnRenamed("appointment_time", "updated")
 
                 # Retrieve the maximum timestamp value from the existing df
                 max_timestamp = (
@@ -59,9 +57,24 @@ def load_data_frames(
     return data_frames
 
 
+def duplicate_dataframes(
+    data_frames: Dict[str, DataFrame], spark: SparkSession
+) -> Dict[str, DataFrame]:
+    """
+    Create duplicate dataframes for transformation
+    """
+    duplicate_dfs: Dict[str, DataFrame] = {}
+    for df_name, dataframe in data_frames.items():
+        duplicate_dfs[df_name] = spark.createDataFrame(dataframe.rdd, dataframe.schema)
+    return duplicate_dfs
+
+
 def rename_columns_names(
     end_points_list: list, data_frames: Dict[str, DataFrame]
 ) -> Dict[str, DataFrame]:
+    """
+    Renames specific columns in each dataframe based on the endpoint.
+    """
     for end_point in end_points_list:
         data_frames[f"{end_point}_df"] = data_frames[
             f"{end_point}_df"
@@ -79,7 +92,9 @@ def rename_columns_names(
 
 
 def df_merge(data_frames: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
-    # Perform joins on the dfs to create a merged df
+    """
+    Performs joins on the dataframes to create a merged data frame.
+    """
     merged_df = (
         data_frames["councillor_df"]
         .join(data_frames["patient_councillor_df"], "councillor_id")
@@ -93,12 +108,12 @@ def df_merge(data_frames: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
 
 
 def data_preprocessing(merged_df: DataFrame) -> DataFrame:
-    # filter the active and confirmed  price log
+    """
+    Preprocesses the merged dataframe by filtering, selecting columns, removing missing values, and removing duplicates.
+    """
     merged_df = merged_df.filter(
         (merged_df["is_active"] == "true") & (merged_df["confirmed"] == "true")
     )
-
-    # Select specific columns from the merged df
     merged_df = merged_df.select(
         "councillor_id",
         "patient_id",
@@ -108,33 +123,25 @@ def data_preprocessing(merged_df: DataFrame) -> DataFrame:
         "appointment_time",
         "appointment_id",
     )
-
-    # Removes rows with any missing values
     cleaned_missing_values_df = merged_df.na.drop()
-
-    # Cleaning Duplicate Records
     cleaned_df = cleaned_missing_values_df.dropDuplicates()
 
     return cleaned_df
 
 
-def calculate_appointment_gap_duration(sorted_data_df: DataFrame) -> DataFrame:
-    # Explode the array column to create a row for each element in the array
-    df_exploded = sorted_data_df.select(
+def calculate_appointment_gap_duration(sorted_df: DataFrame) -> DataFrame:
+    """
+    Calculates the duration between consecutive appointments for each councillor-patient-category group.
+    """
+    df_exploded = sorted_df.select(
         "councillor_id", "patient_id", "category", "appointment_time"
     )
-
-    # Define a window spec for ordering the rows based on the timestamp
     window_spec = Window.partitionBy("councillor_id", "patient_id", "category").orderBy(
         "appointment_time"
     )
-
-    # Calculate the duration between consecutive timestamps
     df_with_duration = df_exploded.withColumn(
         "previous_appointment_time", F.lag(F.col("appointment_time")).over(window_spec)
     )
-
-    # Calculate the duration in seconds
     df_with_duration = df_with_duration.withColumn(
         "duration",
         (
@@ -143,7 +150,6 @@ def calculate_appointment_gap_duration(sorted_data_df: DataFrame) -> DataFrame:
         ).cast("int"),
     )
 
-    # Calculate the duration in days
     df_with_duration = df_with_duration.withColumn(
         "duration_days", F.col("duration") / 86400
     )
@@ -151,48 +157,47 @@ def calculate_appointment_gap_duration(sorted_data_df: DataFrame) -> DataFrame:
     return df_with_duration
 
 
-def treatment_numbers(again_sorted_df: DataFrame, spark: SparkSession) -> DataFrame:
+def treatment_numbers(category_sorted_df: DataFrame, spark: SparkSession) -> DataFrame:
+    """
+    Assign treatment numbers to series of appointment based on 14 days gape.
+    """
     my_list = []
     count_number = 1
-    for_loop_1st_iteration = True
+    prev_row = spark.createDataFrame([], schema=category_sorted_df.schema)
+    if not category_sorted_df.rdd.isEmpty():
+        prev_row = category_sorted_df.collect()[0]
 
-    # Iterate over the values
-    for next_row in again_sorted_df.collect():
-        if for_loop_1st_iteration:
-            temp_row = next_row
-            for_loop_1st_iteration = False
+    for row in category_sorted_df.collect():
         if (
-            next_row["treatment_start_status"] == 2
-            and next_row["councillor_id"] == temp_row["councillor_id"]
-            and next_row["patient_id"] == temp_row["patient_id"]
-            and next_row["category"] == temp_row["category"]
+            row["treatment_start_status"] == 2
+            and row["councillor_id"] == prev_row["councillor_id"]
+            and row["patient_id"] == prev_row["patient_id"]
+            and row["category"] == prev_row["category"]
         ):
-            count_number = count_number + 1
+            count_number += 1
             my_list.append(count_number)
 
-        elif next_row["treatment_start_status"] == 2:
+        elif row["treatment_start_status"] == 2:
             my_list.append(count_number)
 
         elif (
-            next_row["councillor_id"] == temp_row["councillor_id"]
-            and next_row["patient_id"] == temp_row["patient_id"]
-            and next_row["category"] == temp_row["category"]
+            row["councillor_id"] == prev_row["councillor_id"]
+            and row["patient_id"] == prev_row["patient_id"]
+            and row["category"] == prev_row["category"]
         ):
             my_list.append(count_number)
 
         else:
             count_number = 1
             my_list.append(count_number)
-        temp_row = next_row
 
-    # Create a list of tuples
+        prev_row = row
+
     data_tuples = [(value,) for value in my_list]
 
-    # Create the df
     data_df = data_tuples
     new_df = spark.createDataFrame(data_df, ["specific_treatment_number"])
 
-    # Add a sequential index column
     rdd_with_index = new_df.rdd.zipWithIndex()
     treatment_numbers_df = spark.createDataFrame(
         rdd_with_index, ["Data", "Index"]
@@ -202,8 +207,9 @@ def treatment_numbers(again_sorted_df: DataFrame, spark: SparkSession) -> DataFr
 
 
 def success_rate(combined_table: DataFrame) -> DataFrame:
-    # Group the combined_table df by "councillor_id", "patient_id", "category", and
-    # "specific_treatment_number" and calculate the success rate as a percentage
+    """
+    Calculates the average success rate for each councillor.
+    """
     success_rate_df = (
         combined_table.groupBy(
             "councillor_id", "patient_id", "category", "specific_treatment_number"
@@ -231,6 +237,9 @@ def success_rate(combined_table: DataFrame) -> DataFrame:
 
 
 def duration(combined_table: DataFrame) -> DataFrame:
+    """
+    Calculates the average duration (time spent) for each councillor.
+    """
     # Group the combined_table and calculate the treatments duration by multiplying the number of appointments by 30
     treatments_duration_df = (
         combined_table.groupBy(
@@ -239,17 +248,17 @@ def duration(combined_table: DataFrame) -> DataFrame:
         .agg(F.count("*").alias("councillor_appointments"))
         .withColumn("treatments_duration", F.col("councillor_appointments") * F.lit(30))
     )
-
-    # Calculate the average total duration of appointments for each councillor
-    avg_total_duration_of_appointments_df = treatments_duration_df.groupBy(
+    avg_total_duration_of_treatments_df = treatments_duration_df.groupBy(
         "councillor_id"
     ).agg(F.mean("treatments_duration").alias("avg_time_spent"))
 
-    return avg_total_duration_of_appointments_df
+    return avg_total_duration_of_treatments_df
 
 
 def cost(combined_table: DataFrame) -> DataFrame:
-    # Calculate the count of appointments by "councillor_id", "patient_id", "category" and "specific_treatment_number"
+    """
+    Calculates the average treatment cost for each councillor.
+    """
     concillor_appointments_df = (
         combined_table.groupBy(
             "councillor_id", "patient_id", "category", "specific_treatment_number"
@@ -258,7 +267,6 @@ def cost(combined_table: DataFrame) -> DataFrame:
         .join(combined_table, "councillor_id")
     )
 
-    # Calculate the treatment cost by multiplying the "concillor_appointments" and "amount_in_pkr" columns
     treatment_cost_df = concillor_appointments_df.withColumn(
         "treatment_cost", F.col("concillor_appointments") * F.col("amount_in_pkr")
     )
@@ -272,12 +280,12 @@ def cost(combined_table: DataFrame) -> DataFrame:
 
 
 def appointments_per_treatment(combined_table: DataFrame) -> DataFrame:
-    # Calculate the count of appointments by "councillor_id", "patient_id", "category" and "specific_treatment_number"
+    """
+    Calculates the average number of appointments per treatment for each councillor.
+    """
     concillor_appointments_df = combined_table.groupBy(
         "councillor_id", "patient_id", "category", "specific_treatment_number"
     ).agg(F.count("*").alias("concillor_appointments"))
-
-    # Calculate the average no of appointments per treatment
     avg_concillor_appointments_df = concillor_appointments_df.groupBy(
         "councillor_id"
     ).agg((F.round(F.mean("concillor_appointments"))).alias("avg_appointments"))
@@ -286,18 +294,15 @@ def appointments_per_treatment(combined_table: DataFrame) -> DataFrame:
 
 
 def total_councillor_treatments(combined_table: DataFrame) -> DataFrame:
-    # Create a temporary df to hold the combined table
+    """
+    Calculates the total number of treatments for each councillor.
+    """
     temp_df = combined_table
-
-    # Select the desired columns from the combined table
     temp_df = temp_df.select(
         "councillor_id", "patient_id", "category", "specific_treatment_number"
     )
 
-    # Remove any duplicate rows
     temp_df = temp_df.dropDuplicates()
-
-    # Group the temporary df by 'councillor_id' and calculate the total treatments using count aggregation
     total_treatments_df = temp_df.groupBy("councillor_id").agg(
         F.count("*").alias("total_treatments")
     )
@@ -306,7 +311,9 @@ def total_councillor_treatments(combined_table: DataFrame) -> DataFrame:
 
 
 def appointment_status(cleaned_df: DataFrame) -> DataFrame:
-    # Add a new column "appointment_status" based on the "rating" column
+    """
+    Adds "appointment_status" based on the "rating" column.
+    """
     appointment_status_df = cleaned_df.withColumn(
         "appointment_status",
         F.when(F.col("rating") >= 4, "successful").otherwise("unsuccessful"),
@@ -315,17 +322,22 @@ def appointment_status(cleaned_df: DataFrame) -> DataFrame:
     return appointment_status_df
 
 
-def sort_data(sort_df: DataFrame) -> DataFrame:
-    # Order the df by "councillor_id", "patient_id", "category", and "appointment_time" in ascending order
-    sorted_data_df = sort_df.orderBy(
+def sort_by_time(sort_df: DataFrame) -> DataFrame:
+    """
+    Sorts the DataFrame by "councillor_id", "patient_id", "category", and "appointment_time" in ascending order.
+    """
+    sorted_df = sort_df.orderBy(
         "councillor_id", "patient_id", "category", "appointment_time"
     )
 
-    return sorted_data_df
+    return sorted_df
 
 
 def treatment_start_status(gap_duration_df: DataFrame) -> DataFrame:
-    # Add new column that contain new treatment start status if gap between appointment greater tha 14 days
+    """
+    triggers the new treatment strated on basis of 14 days gap
+
+    """
     treatment_start_status_df = gap_duration_df.withColumn(
         "treatment_start_status", F.when(F.col("duration_days") > 14, 2).otherwise(1)
     )
@@ -333,8 +345,10 @@ def treatment_start_status(gap_duration_df: DataFrame) -> DataFrame:
     return treatment_start_status_df
 
 
-def sort_on_category(treatment_start_status_df: DataFrame) -> DataFrame:
-    # Order the df treatment_start_status_df by "councillor_id", "patient_id", and "category" in ascending order
+def sort_by_category(treatment_start_status_df: DataFrame) -> DataFrame:
+    """
+    Sorts the DataFrame based on the "councillor_id", "patient_id", and "category" columns in ascending order.
+    """
     sort_on_category_df = treatment_start_status_df.orderBy(
         "councillor_id", "patient_id", "category"
     )
@@ -345,17 +359,15 @@ def sort_on_category(treatment_start_status_df: DataFrame) -> DataFrame:
 def specific_treatment_numbers(
     treatment_start_status_df: DataFrame, specific_treatment_numbers_df: DataFrame
 ) -> DataFrame:
-    # Add a new index column
+    """
+    Join two dfs on the basis of index
+    """
     treatment_start_status_df = treatment_start_status_df.withColumn(
         "Index", F.monotonically_increasing_id()
     )
-
-    # Join the treatment_start_status_df with specific_treatment_numbers_df on the 'Index' column
     specific_treatment_df = treatment_start_status_df.join(
         specific_treatment_numbers_df, "Index"
     )
-
-    # Select the desired columns in the resulting df
     specific_treatment_df = specific_treatment_df.select(
         "councillor_id",
         "patient_id",
@@ -363,14 +375,15 @@ def specific_treatment_numbers(
         "specific_treatment_number",
         "appointment_time",
     )
-
-    # Drop duplicate rows based on all columns
     specific_treatment_df = specific_treatment_df.dropDuplicates()
 
     return specific_treatment_df
 
 
 def rename_columns(appointment_status_df: DataFrame) -> DataFrame:
+    """
+    Renames specific columns in the DataFrame.
+    """
     column_names = ["councillor_id", "patient_id", "category", "appointment_time"]
 
     for name in column_names:
@@ -384,7 +397,9 @@ def rename_columns(appointment_status_df: DataFrame) -> DataFrame:
 def final_table(
     specific_treatment_df: DataFrame, appointment_status_df: DataFrame
 ) -> DataFrame:
-    # Define the join condition
+    """
+    Combines specific treatment data with appointment status and returns required columns.
+    """
     join_condition = (
         (specific_treatment_df.councillor_id == appointment_status_df.councillor_id_app)
         & (specific_treatment_df.patient_id == appointment_status_df.patient_id_app)
@@ -395,12 +410,9 @@ def final_table(
         )
     )
 
-    # Perform an inner join using the join condition
     combined_table = specific_treatment_df.join(
         appointment_status_df, join_condition, "inner"
     )
-
-    # Select the desired columns from the combined table
     combined_table = combined_table.select(
         "councillor_id",
         "patient_id",
@@ -414,6 +426,9 @@ def final_table(
 
 
 def outcome_prediction(combined_table: DataFrame) -> DataFrame:
+    """
+    Returns outcome predictions based on combined treatment data.
+    """
     success_rate_df = success_rate(combined_table)
     duration_df = duration(combined_table)
     cost_df = cost(combined_table)
@@ -434,19 +449,18 @@ def outcome_prediction(combined_table: DataFrame) -> DataFrame:
 def transformation(
     end_points_list: list, data_frames: Dict[str, DataFrame], spark: SparkSession
 ) -> DataFrame:
+    """
+    Transforms the data with help of defined functions and returns the final results.
+    """
     data_frames = rename_columns_names(end_points_list, data_frames)
     merged_df = df_merge(data_frames)
     cleaned_df = data_preprocessing(merged_df)
     appointment_status_df = appointment_status(cleaned_df)
-    sorted_data_df = sort_data(appointment_status_df)
-    # Apply the appointment_gap_duration function to the add
-    # duration_days column that contain duration between
-    # appointment gaps
-    appointment_gap_duration = calculate_appointment_gap_duration(sorted_data_df)
+    sorted_df = sort_by_time(appointment_status_df)
+    appointment_gap_duration = calculate_appointment_gap_duration(sorted_df)
     treatment_start_status_df = treatment_start_status(appointment_gap_duration)
-    sorted_on_category_df = sort_on_category(treatment_start_status_df)
-    # Call the treatment_numbers function for adding new column that contains treatment number
-    specific_treatment_numbers_df = treatment_numbers(sorted_on_category_df, spark)
+    category_sorted_df = sort_by_category(treatment_start_status_df)
+    specific_treatment_numbers_df = treatment_numbers(category_sorted_df, spark)
     specific_treatment_df = specific_treatment_numbers(
         treatment_start_status_df, specific_treatment_numbers_df
     )
@@ -458,6 +472,9 @@ def transformation(
 
 
 def results_db(outcome_data: DataFrame) -> None:
+    """
+    Overwrite the final results to a PostgreSQL database table.
+    """
     outcome_data.write.format("jdbc").option(
         "url", "jdbc:postgresql://postgres:5432/outcome_prediction"
     ).option("dbtable", "result").option("user", "user").option(
@@ -470,6 +487,9 @@ def results_db(outcome_data: DataFrame) -> None:
 
 
 def main(data_frame: Dict[str, DataFrame]) -> None:
+    """
+    Implements the complete ETL pipeline
+    """
     end_points_list = [
         "appointment",
         "patient_councillor",
@@ -479,18 +499,21 @@ def main(data_frame: Dict[str, DataFrame]) -> None:
         "report",
     ]
 
-    # Initialize SparkSession
     spark = SparkSession.builder.getOrCreate()
     data_frames = load_data_frames(end_points_list, data_frame, spark)
-    outcome_data = transformation(end_points_list, data_frames, spark)
-    # results_db(outcome_data)
+    duplicate_dfs = duplicate_dataframes(data_frames, spark)
+    outcome_data = transformation(end_points_list, duplicate_dfs, spark)
+    results_db(outcome_data)
     return outcome_data.show()
 
 
 def schedule_job() -> None:
+    """
+    Schedule main function (pipeline)
+    """
     data_frame: Dict[str, DataFrame] = {}
     scheduler = BackgroundScheduler()
-    scheduler.add_job(main, "interval", minutes=2, args=[data_frame])
+    scheduler.add_job(main, "interval", seconds=10, args=[data_frame])
     scheduler.start()
 
     try:
@@ -506,6 +529,4 @@ if __name__ == "__main__":
         level=logging.INFO,
         format="%(asctime)s - %(levelname)s - %(message)s",
     )
-
-    # Schedule and run the job
     schedule_job()

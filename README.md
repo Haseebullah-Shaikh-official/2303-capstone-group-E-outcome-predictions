@@ -7,7 +7,7 @@
 ###### Humza Moeen
 ###### Huzaifa Waseem
 
-### Project details will be updated later
+##### Note: The description of the project is incomplete yet.
 
 ### Transformation approach 03 : Responsible persons and there task
 Huzaifa Waseem has implemented the overall transformation approach 03.
