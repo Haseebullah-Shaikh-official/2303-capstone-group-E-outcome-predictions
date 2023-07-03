@@ -30,11 +30,6 @@ def load_data_frames(
             if variable_name in data_frames:
                 logging.info(f"Data frame: {end_point} already exists, adding new data")
 
-                if variable_name == "appointment_df":
-                    data_frames[variable_name] = data_frames[
-                        variable_name
-                    ].withColumnRenamed("appointment_updated", "updated")
-
                 # Retrieve the maximum timestamp value from the existing df
                 max_timestamp = (
                     data_frames[variable_name]
@@ -56,6 +51,17 @@ def load_data_frames(
             logging.info(f"No data returned for endpoint: {end_point}")
 
     return data_frames
+
+
+def duplicate_dataframes(
+    data_frames: Dict[str, DataFrame], spark: SparkSession
+) -> Dict[str, DataFrame]:
+    duplicate_dfs: Dict[str, DataFrame] = {}
+
+    for df_name, dataframe in data_frames.items():
+        duplicate_dfs[df_name] = spark.createDataFrame(dataframe.rdd, dataframe.schema)
+
+    return duplicate_dfs
 
 
 def df_rename(data_frames: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
@@ -220,7 +226,8 @@ def main(data_frame: Dict[str, DataFrame]) -> DataFrame:
     # Initialize SparkSession
     spark = SparkSession.builder.getOrCreate()
     data_frames = load_data_frames(end_points_list, data_frame, spark)
-    outcome_data = transformation(data_frames)
+    duplicate_dfs = duplicate_dataframes(data_frames, spark)
+    outcome_data = transformation(duplicate_dfs)
     results_db(outcome_data)
     return outcome_data.show()
 
