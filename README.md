@@ -7,7 +7,7 @@
 ###### Humza Moeen
 ###### Huzaifa Waseem
 
-### Project details will be updated later
+> Note: The description of the project is incomplete yet.
 
 ### Transformation approach 02 : Responsible persons and there task
 Hammad Irshad has implemented the overall transformation approach 02.
