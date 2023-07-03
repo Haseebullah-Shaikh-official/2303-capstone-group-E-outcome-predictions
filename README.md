@@ -7,7 +7,7 @@
 ###### Humza Moeen
 ###### Huzaifa Waseem
 
-### Project details will be updated later
+##### Note: The description of the project is incomplete yet.
 
 ## Expose Api Service: Responsible Person
 Implemented and refactored by Haseebullah.
