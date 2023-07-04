@@ -5,8 +5,6 @@ from typing import Dict
 
 import pyspark.sql.functions as F
 import requests  # type: ignore
-
-# import schedule
 from apscheduler.schedulers.background import BackgroundScheduler
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.window import Window
@@ -70,25 +68,26 @@ def duplicate_dataframes(
 
 
 def rename_columns_names(
-    end_points_list: list, data_frames: Dict[str, DataFrame]
+    end_points_list: list, data_frames: Dict[str, DataFrame], spark: SparkSession
 ) -> Dict[str, DataFrame]:
     """
     Renames specific columns in each dataframe based on the endpoint.
     """
+    data_frames_dup = duplicate_dataframes(data_frames, spark)
     for end_point in end_points_list:
-        data_frames[f"{end_point}_df"] = data_frames[
+        data_frames_dup[f"{end_point}_df"] = data_frames_dup[
             f"{end_point}_df"
         ].withColumnRenamed("id", f"{end_point}_id")
         if end_point == "rating":
-            data_frames[f"{end_point}_df"] = data_frames[
+            data_frames_dup[f"{end_point}_df"] = data_frames_dup[
                 f"{end_point}_df"
             ].withColumnRenamed("value", "rating")
         if end_point == "appointment":
-            data_frames[f"{end_point}_df"] = data_frames[
+            data_frames_dup[f"{end_point}_df"] = data_frames_dup[
                 f"{end_point}_df"
             ].withColumnRenamed("updated", "appointment_time")
 
-    return data_frames
+    return data_frames_dup
 
 
 def df_merge(data_frames: Dict[str, DataFrame]) -> Dict[str, DataFrame]:
@@ -133,6 +132,7 @@ def calculate_appointment_gap_duration(sorted_df: DataFrame) -> DataFrame:
     """
     Calculates the duration between consecutive appointments for each councillor-patient-category group.
     """
+    seconds_per_day = 86400
     df_exploded = sorted_df.select(
         "councillor_id", "patient_id", "category", "appointment_time"
     )
@@ -151,7 +151,7 @@ def calculate_appointment_gap_duration(sorted_df: DataFrame) -> DataFrame:
     )
 
     df_with_duration = df_with_duration.withColumn(
-        "duration_days", F.col("duration") / 86400
+        "duration_days", F.col("duration") / seconds_per_day
     )
 
     return df_with_duration
@@ -240,13 +240,16 @@ def duration(combined_table: DataFrame) -> DataFrame:
     """
     Calculates the average duration (time spent) for each councillor.
     """
-    # Group the combined_table and calculate the treatments duration by multiplying the number of appointments by 30
+    appointment_duration = 30
     treatments_duration_df = (
         combined_table.groupBy(
             "councillor_id", "patient_id", "category", "specific_treatment_number"
         )
         .agg(F.count("*").alias("councillor_appointments"))
-        .withColumn("treatments_duration", F.col("councillor_appointments") * F.lit(30))
+        .withColumn(
+            "treatments_duration",
+            F.col("councillor_appointments") * F.lit(appointment_duration),
+        )
     )
     avg_total_duration_of_treatments_df = treatments_duration_df.groupBy(
         "councillor_id"
@@ -314,9 +317,12 @@ def appointment_status(cleaned_df: DataFrame) -> DataFrame:
     """
     Adds "appointment_status" based on the "rating" column.
     """
+    success_rating = 4
     appointment_status_df = cleaned_df.withColumn(
         "appointment_status",
-        F.when(F.col("rating") >= 4, "successful").otherwise("unsuccessful"),
+        F.when(F.col("rating") >= success_rating, "successful").otherwise(
+            "unsuccessful"
+        ),
     )
 
     return appointment_status_df
@@ -338,8 +344,10 @@ def treatment_start_status(gap_duration_df: DataFrame) -> DataFrame:
     triggers the new treatment strated on basis of 14 days gap
 
     """
+    appointment_gap_in_days = 14
     treatment_start_status_df = gap_duration_df.withColumn(
-        "treatment_start_status", F.when(F.col("duration_days") > 14, 2).otherwise(1)
+        "treatment_start_status",
+        F.when(F.col("duration_days") > appointment_gap_in_days, 2).otherwise(1),
     )
 
     return treatment_start_status_df
@@ -452,7 +460,7 @@ def transformation(
     """
     Transforms the data with help of defined functions and returns the final results.
     """
-    data_frames = rename_columns_names(end_points_list, data_frames)
+    data_frames = rename_columns_names(end_points_list, data_frames, spark)
     merged_df = df_merge(data_frames)
     cleaned_df = data_preprocessing(merged_df)
     appointment_status_df = appointment_status(cleaned_df)
