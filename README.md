@@ -21,6 +21,11 @@ Hammad Irshad has implemented the overall transformation approach 02.
 Humza Asim has replaced the aps scheduler.
 Haseebullah has refactored the code and fixed the pre-commits.
 
+### Transformation approach 03 : Responsible persons and there task
+Huzaifa Waseem has implemented the overall transformation approach 03.
+Humza Asim has added the aps scheduler.
+Huzaifa Waseem and Haseebullah has refactored the code ad fixed the pre-commits.
+
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html 
 https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html 
@@ -30,3 +35,4 @@ https://apscheduler.readthedocs.io/en/3.x/
 https://apscheduler.readthedocs.io/en/latest/modules/events.html#module-apscheduler.events
 https://realpython.com/python-requests/
 Chatgpt: Used for discussion, builtin functions concepts, description and comparison 
+https://realpython.com/python-requests/
