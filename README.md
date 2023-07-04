@@ -26,6 +26,9 @@ Huzaifa Waseem has implemented the overall transformation approach 03.
 Humza Asim has added the aps scheduler.
 Huzaifa Waseem and Haseebullah has refactored the code ad fixed the pre-commits.
 
+## Expose Api Service: Responsible Person
+Implemented and refactored by Haseebullah.
+
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html 
 https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html 
@@ -36,3 +39,5 @@ https://apscheduler.readthedocs.io/en/latest/modules/events.html#module-apschedu
 https://realpython.com/python-requests/
 Chatgpt: Used for discussion, builtin functions concepts, description and comparison 
 https://realpython.com/python-requests/
+https://medium.com/@arturocuicas/fastapi-with-postgresql-part-1-70a3960fb6ee
+
