@@ -13,7 +13,7 @@ from pyspark.sql.window import Window
 def load_data_frames(
     end_points_list: list, data_frames: Dict[str, DataFrame], spark: SparkSession
 ) -> Dict[str, DataFrame]:
-    url_link = os.environ.get("URL_LINK")
+    url_link = "https://xloop-dummy.herokuapp.com/"
 
     for end_point in end_points_list:
         variable_name = f"{end_point}_df"  # Generate a variable name for the df

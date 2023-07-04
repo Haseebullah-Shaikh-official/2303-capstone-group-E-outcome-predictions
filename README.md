@@ -21,6 +21,9 @@ Hammad Irshad has implemented the overall transformation approach 02.
 Humza Asim has replaced the aps scheduler.
 Haseebullah has refactored the code and fixed the pre-commits.
 
+### Testing Transformation approach 02 : Responsible persons
+Test is implemented by Hammad Irshad. 
+
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html 
 https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html 
@@ -30,3 +33,4 @@ https://apscheduler.readthedocs.io/en/3.x/
 https://apscheduler.readthedocs.io/en/latest/modules/events.html#module-apscheduler.events
 https://realpython.com/python-requests/
 Chatgpt: Used for discussion, builtin functions concepts, description and comparison 
+https://towardsdatascience.com/the-elephant-in-the-room-how-to-write-pyspark-unit-tests-a5073acabc34
