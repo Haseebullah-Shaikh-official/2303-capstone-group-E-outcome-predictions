@@ -1,5 +1,4 @@
 import logging
-import os
 import time
 from typing import Dict
 
@@ -16,7 +15,7 @@ def load_data_frames(
     """
     Loads dataframes from API with endpoints and updates the existing data frames.
     """
-    url_link = os.environ.get("URL_LINK")
+    url_link = "https://xloop-dummy.herokuapp.com/"
     for end_point in end_points_list:
         variable_name = f"{end_point}_df"  # Generate a variable name for the df
         url = url_link + end_point  # Construct the URL for the API request
