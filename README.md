@@ -32,6 +32,9 @@ Testing is implemented by Haseebullah and Hammad Irshad
 ## Expose Api Service: Responsible Person
 Implemented and refactored by Haseebullah.
 
+## Expose Api test: Responsible Person
+Implemented by Humza Asim and Haseebullah
+
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html
 https://spark.apache.org/docs/latest/sql-data-sources-jdbc.html
@@ -43,3 +46,7 @@ https://realpython.com/python-requests/
 Chatgpt: Used for discussion, builtin functions concepts, description and comparison
 https://realpython.com/python-requests/
 https://medium.com/@arturocuicas/fastapi-with-postgresql-part-1-70a3960fb6ee
+https://docs.python.org/3/library/unittest.mock.html
+https://pypi.org/project/testing.postgresql/
+Chatgpt for understange how we can mock a database connection.
+Grzegorz Jurdzinski testing examples.
