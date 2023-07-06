@@ -19,9 +19,10 @@ class TestExposeApi(TestCase):
 
             # Define the expected row data
             expected_row = (50, 56.25, 33.75, 135.0, 1.0)
-
+            expected_columns = ["a", "b", "c", "d", "e"]
             # Mock the fetchone method to return the expected row
             mock_cursor.fetchone.return_value = expected_row
+            mock_cursor.description = expected_columns
 
             # Specify the ID for testing
             councillor_id = 50
@@ -32,17 +33,15 @@ class TestExposeApi(TestCase):
             # Assert that the response has a 200 status code
             self.assertEqual(response.status_code, 200)
 
+            expected_response = {
+                "a": expected_row[0],
+                "b": expected_row[1],
+                "c": expected_row[2],
+                "d": expected_row[3],
+                "e": expected_row[4],
+            }
             # Assert that the response contains the expected data
-            self.assertEqual(
-                response.json(),
-                {
-                    "councillor_id": expected_row[0],
-                    "success_rate": expected_row[1],
-                    "avg_duration_per_treatment": expected_row[2],
-                    "avg_cost_per_treatment": expected_row[3],
-                    "avg_appointments_per_treatment": expected_row[4],
-                },
-            )
+            self.assertEqual(response.json(), expected_response)
 
             # Assert that the database connection and cursor were called correctly
             mock_connect.assert_called_once_with(
