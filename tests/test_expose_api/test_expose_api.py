@@ -8,7 +8,7 @@ from fastapi.testclient import TestClient
 import src.expose_api.api as api
 
 
-class TestData(TestCase):
+class TestExposeApi(TestCase):
     def test_get_data_200(self):
         # Mock the psycopg2.connect method
         with mock.patch.object(psycopg2, "connect") as mock_connect:
