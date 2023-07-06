@@ -1,4 +1,3 @@
-import sys
 import unittest
 from unittest import TestCase, mock
 
@@ -6,11 +5,7 @@ from unittest import TestCase, mock
 import psycopg2
 from fastapi.testclient import TestClient
 
-from src.expose_api import api
-
-sys.path.append(
-    "/home/hamzaasim/Documents/git capstone repo/2303-capstone-group-E-outcome-predictions"
-)
+import src.expose_api.api as api
 
 
 class TestData(TestCase):
