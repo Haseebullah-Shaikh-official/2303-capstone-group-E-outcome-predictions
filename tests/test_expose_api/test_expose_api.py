@@ -7,22 +7,21 @@ from fastapi.testclient import TestClient
 
 import src.expose_api.api as api
 
+# Create a test client using the FastAPI application
+client = TestClient(api.api)
+
 
 class TestExposeApi(TestCase):
     def test_get_data_200(self):
-        # Mock the psycopg2.connect method
         with mock.patch.object(psycopg2, "connect") as mock_connect:
             # Mock the database cursor
             mock_cursor = mock_connect.return_value.cursor.return_value
 
-            # define the expected row data
-            expected_row = (50, 56.25, 33.75, 135.0, 1.0, 8)
+            # Define the expected row data
+            expected_row = (50, 56.25, 33.75, 135.0, 1.0)
 
             # Mock the fetchone method to return the expected row
             mock_cursor.fetchone.return_value = expected_row
-
-            # Create a test client using the FastAPI application
-            client = TestClient(api.api)
 
             # Specify the ID for testing
             councillor_id = 50
@@ -33,6 +32,18 @@ class TestExposeApi(TestCase):
             # Assert that the response has a 200 status code
             self.assertEqual(response.status_code, 200)
 
+            # Assert that the response contains the expected data
+            self.assertEqual(
+                response.json(),
+                {
+                    "councillor_id": expected_row[0],
+                    "success_rate": expected_row[1],
+                    "avg_duration_per_treatment": expected_row[2],
+                    "avg_cost_per_treatment": expected_row[3],
+                    "avg_appointments_per_treatment": expected_row[4],
+                },
+            )
+
             # Assert that the database connection and cursor were called correctly
             mock_connect.assert_called_once_with(
                 host="postgres",
@@ -42,13 +53,14 @@ class TestExposeApi(TestCase):
                 password="password",
             )
 
-            # Assert that execute called once with query and councillor id
+            # Assert that execute was called once with the query and councillor ID
             query = 'SELECT * FROM result WHERE "councillor_id" = %s'
             mock_cursor.execute.assert_called_once_with(query, (councillor_id,))
 
-            # Assert that fetchone called once
+            # Assert that fetchone was called once
             mock_cursor.fetchone.assert_called_once()
 
+            # Assert that the cursor and connection were closed
             mock_cursor.close.assert_called_once()
             mock_connect.return_value.close.assert_called_once()
 
@@ -60,9 +72,6 @@ class TestExposeApi(TestCase):
 
             # Mock the fetchone method to return None
             mock_cursor.fetchone.return_value = None
-
-            # Create a test client using the FastAPI application
-            client = TestClient(api.api)
 
             # Specify a non-exist ID for testing
             councillor_id = 55
@@ -103,9 +112,6 @@ class TestExposeApi(TestCase):
             mock_connect.side_effect = psycopg2.OperationalError(
                 "Database connection failed"
             )
-
-            # Create a test client using the FastAPI application
-            client = TestClient(api.api)
 
             # Specify the ID for testing
             councillor_id = 50
