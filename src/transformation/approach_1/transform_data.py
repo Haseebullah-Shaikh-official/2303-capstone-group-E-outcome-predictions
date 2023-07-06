@@ -131,16 +131,20 @@ def success_rate(cleaned_df: DataFrame) -> DataFrame:
 
 def duration(cleaned_df: DataFrame) -> DataFrame:
     # Group cleaned_df, calculate appointments count, multiply by 30 for treatments duration.
+    appointment_time = 30
     treatments_duration_df = (
         cleaned_df.groupBy("councillor_id", "patient_id")
         .agg(F.count("*").alias("councillor_appointments"))
-        .withColumn("treatments_duration", F.col("councillor_appointments") * F.lit(30))
+        .withColumn(
+            "treatments_duration",
+            F.col("councillor_appointments") * F.lit(appointment_time),
+        )
     )
 
     # Group treatments_duration_df, calculate average total appointments duration per councillor.
     avg_total_duration_of_appointments_df = treatments_duration_df.groupBy(
         "councillor_id"
-    ).agg(F.mean("treatments_duration").alias("avg_duration_per_treatment"))
+    ).agg(F.mean("treatments_duration").alias("avg_duration"))
 
     return avg_total_duration_of_appointments_df
 
@@ -160,7 +164,7 @@ def cost(cleaned_df: DataFrame) -> DataFrame:
 
     # Calculate the average of the "treatment_cost"
     avg_treatment_cost_df = treatment_cost_df.groupBy("councillor_id").agg(
-        F.mean("treatment_cost").alias("avg_cost_per_treatment")
+        F.mean("treatment_cost").alias("avg_cost")
     )
 
     return avg_treatment_cost_df
@@ -175,11 +179,7 @@ def appointments_per_treatment(cleaned_df: DataFrame) -> DataFrame:
     # Calculate the average no of appointments per treatment
     avg_concillor_appointments_df = concillor_appointments_df.groupBy(
         "councillor_id"
-    ).agg(
-        (F.round(F.mean("concillor_appointments"))).alias(
-            "avg_appointments_per_treatment"
-        )
-    )
+    ).agg((F.round(F.mean("concillor_appointments"))).alias("avg_appointments"))
 
     return avg_concillor_appointments_df
 
