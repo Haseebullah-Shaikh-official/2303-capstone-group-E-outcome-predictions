@@ -1,5 +1,4 @@
 import os
-import sys
 import unittest
 from typing import Dict
 from unittest.mock import MagicMock, patch
@@ -7,9 +6,6 @@ from unittest.mock import MagicMock, patch
 from pyspark.sql import DataFrame, SparkSession
 
 import src.transformation.approach_1.transform_data as transform_data
-
-src_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-sys.path.append(src_dir)
 
 
 def create_dataframes(spark: SparkSession) -> Dict[str, DataFrame]:
@@ -355,7 +351,7 @@ class TransformDataTestCase(unittest.TestCase):
 
     def test_data_processing(self):
         councillor_1360 = self.spark.read.csv(
-            "data/councillor_1360.csv", header=True, inferSchema=True
+            "tests/data/councillor_1360.csv", header=True, inferSchema=True
         )
         cleaned_df = transform_data.data_preprocessing(councillor_1360)
         expected_df = create_cleaned_df(self.spark)
