@@ -16,6 +16,11 @@ docker exec -it postgres-container psql -U user outcome_prediction
 docker compsoe file is created by Haseebullah and Hamza Asim (together)
 frequent updates are made due to changes in services
 
+### Transformation approach 01 : Responsible persons and there task
+Huzaifa Waseem, Hammad Irshad, Humza Moen has separately worked on transformation approach 01.
+Haseebullah has added the scheduler
+Haseebullah has refactored the code and fixed the pre-commits.
+
 ### Transformation approach 02 : Responsible persons and there task
 Hammad Irshad has implemented the overall transformation approach 02.
 Humza Asim has replaced the aps scheduler.
