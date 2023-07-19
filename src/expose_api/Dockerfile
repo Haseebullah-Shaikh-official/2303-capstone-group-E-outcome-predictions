@@ -17,4 +17,4 @@ COPY . .
 EXPOSE 8000
 
 # Start the FastAPI application
-CMD ["sh", "-c", "sleep 120 && uvicorn api:api --host 0.0.0.0 --port 8000"]
+CMD ["sh", "-c", "sleep 60 && uvicorn api:api --host 0.0.0.0 --port 8000"]

@@ -53,5 +53,6 @@ https://realpython.com/python-requests/
 https://medium.com/@arturocuicas/fastapi-with-postgresql-part-1-70a3960fb6ee
 https://docs.python.org/3/library/unittest.mock.html
 https://pypi.org/project/testing.postgresql/
-Chatgpt for understange how we can mock a database connection.
+Chatgpt for understanding how we can mock a database connection.
 Grzegorz Jurdzinski testing examples.
+https://github.com/compose-spec/compose-spec/blob/master/spec.md#extension

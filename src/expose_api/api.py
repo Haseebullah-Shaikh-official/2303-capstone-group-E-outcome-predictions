@@ -1,3 +1,5 @@
+import os
+
 import psycopg2
 import uvicorn
 from fastapi import FastAPI, HTTPException
@@ -7,16 +9,16 @@ api: FastAPI = FastAPI()
 QUERY = 'SELECT * FROM result WHERE "councillor_id" = %s'
 
 
-@api.get("/{councillor_id}")
+@api.get("/councillor/{councillor_id}")
 def get_data(councillor_id: int) -> dict:
     try:
         # Connect to the PostgreSQL database
         conn = psycopg2.connect(
-            host="postgres",
-            port=5432,
-            database="outcome_prediction",
-            user="user",
-            password="password",
+            host=os.environ.get("POSTGRES_HOST"),
+            port=os.environ.get("POSTGRES_PORT"),
+            database=os.environ.get("POSTGRES_DB"),
+            user=os.environ.get("POSTGRES_USER"),
+            password=os.environ.get("POSTGRES_PASSWORD"),
         )
 
         # Creating a cursor
@@ -51,4 +53,4 @@ def get_data(councillor_id: int) -> dict:
 
 
 if __name__ == "__main__":
-    uvicorn.run("api:api", host="0.0.0.0", port=8000)
+    uvicorn.run("api:api", host="0.0.0.0", port=os.environ.get("API_PORT"))

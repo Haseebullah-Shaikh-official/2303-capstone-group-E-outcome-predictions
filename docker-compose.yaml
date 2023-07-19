@@ -1,12 +1,19 @@
 version: "3"
+x-env: &env
+  environment:
+    POSTGRES_USER: user
+    POSTGRES_PASSWORD: password
+    POSTGRES_DB: outcome_prediction
+    POSTGRES_HOST: postgres
+    POSTGRES_PORT: 5432
+    API_PORT: 8000
+
 services:
   postgres:
     image: postgres
     container_name: postgres-container
-    environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: password
-      POSTGRES_DB: outcome_prediction
+    <<: *env
+
     ports:
       - "5432:5432"
 
@@ -15,6 +22,7 @@ services:
       context: ./src/transformation/approach_1
       dockerfile: Dockerfile
     container_name: transformation-container
+    <<: *env
 
     depends_on:
       - postgres
@@ -24,6 +32,8 @@ services:
       context: ./src/expose_api
       dockerfile: Dockerfile
     container_name: expose-api-container
+    <<: *env
+
     ports:
       - "8000:8000"
     depends_on:

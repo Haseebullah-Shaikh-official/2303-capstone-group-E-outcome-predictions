@@ -209,11 +209,17 @@ def transformation(data_frames: DataFrame, end_points_list: list) -> DataFrame:
 
 
 def results_db(outcome_data: DataFrame) -> DataFrame:
-    outcome_data.write.format("jdbc").option(
-        "url", "jdbc:postgresql://postgres:5432/outcome_prediction"
-    ).option("dbtable", "result").option("user", "user").option(
-        "password", "password"
-    ).option(
+    host = os.environ.get("POSTGRES_HOST")
+    port = os.environ.get("POSTGRES_PORT")
+    user = os.environ.get("POSTGRES_USER")
+    password = os.environ.get("POSTGRES_PASSWORD")
+    database = os.environ.get("POSTGRES_DB")
+    url = f"jdbc:postgresql://{host}:{port}/{database}"
+    table = "result"
+
+    outcome_data.write.format("jdbc").option("url", url).option(
+        "dbtable", table
+    ).option("user", user).option("password", password).option(
         "driver", "org.postgresql.Driver"
     ).mode(
         "overwrite"
@@ -239,6 +245,7 @@ def main(data_frame: Dict[str, DataFrame]) -> None:
 
 def schedule_job() -> None:
     data_frame: Dict[str, DataFrame] = {}
+    main(data_frame)
     schedule.every(1).minutes.do(main, data_frame)
     while True:
         schedule.run_pending()
