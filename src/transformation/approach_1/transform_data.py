@@ -240,13 +240,13 @@ def main(data_frame: Dict[str, DataFrame]) -> None:
     data_frames = load_data_frames(end_points_list, data_frame, spark)
     outcome_data = transformation(data_frames, end_points_list)
     results_db(outcome_data)
-    return outcome_data.show()
+    return logging.info("Results are stored to db.")
 
 
 def schedule_job() -> None:
     data_frame: Dict[str, DataFrame] = {}
     main(data_frame)
-    schedule.every(1).minutes.do(main, data_frame)
+    schedule.every(1).weeks.do(main, data_frame)
     while True:
         schedule.run_pending()
         time.sleep(1)
