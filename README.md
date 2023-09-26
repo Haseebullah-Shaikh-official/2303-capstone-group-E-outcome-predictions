@@ -1,44 +1,46 @@
-# Group-E-Outcome-Prediction - Capstone
+## Outcome Predictions
 
-#### Group E - Team Members
-###### Haseebullah Shaikh (Lead)
-###### Humza Asim
-###### Hammad Irshad
-###### Humza Moeen
-###### Huzaifa Waseem
+### Problem Statement
+Our goal is to optimize the process of finding an ideal councillor for patients, ensuring:
+- **Increased Success**
+- **Affordability**
+- **Minimal Time Investment**
 
-##### Note: The description of the project is incomplete yet.
+### Pipline Architecture
+- The data pipeline begins with the extraction of data from designated APIs.
+- The extracted data is then transformed using the power of PySpark.
+- The processed data, referred as "Outcome Predictions," is seamlessly loaded into a Postgres database.
+- Transformation is implemented in three distinct ways.
+- To facilitate easy access to the transformed data, we have exposed an API that efficiently retrieves the stored information.
+- Each service in our system is Dockerized
 
-### to check final results in db
-docker exec -it postgres-container psql -U user outcome_prediction
 
-### Docker compose services: Responsible persons
-docker compsoe file is created by Haseebullah and Hamza Asim (together)
-frequent updates are made due to changes in services
+### Requirements
+- [Docker](https://www.docker.com/get-started)
+- [Docker Compose](https://docs.docker.com/compose/install/)
 
-### Transformation approach 01 : Responsible persons and there task
-Huzaifa Waseem, Hammad Irshad, Humza Moen has separately worked on transformation approach 01.
-Haseebullah has added the scheduler
-Haseebullah has refactored the code and fixed the pre-commits.
 
-### Transformation approach 02 : Responsible persons and there task
-Hammad Irshad has implemented the overall transformation approach 02.
-Humza Asim has replaced the aps scheduler.
-Haseebullah has refactored the code and fixed the pre-commits.
+### Commands to get started
+- Run the postgres db service first, to make sure it should be running before transformation
+```bash
+docker compose up postgres
+```
+- To run transformation and expose api service
+```bash
+docker compose up
+```
+- Wait few minutes so all requirments can be installed and transformation results processed and exposed through the api
+- Make outcome predictions, to get success success rate, avg time and cost spent for each conucillor
+link:http://localhost:8000/councillor_id , example: http://localhost:8000/55
 
-### Transformation approach 03 : Responsible persons and there task
-Huzaifa Waseem has implemented the overall transformation approach 03.
-Humza Asim has added the aps scheduler.
-Huzaifa Waseem and Haseebullah has refactored the code ad fixed the pre-commits.
+### Contributors
+- [Haseebullah (Team lead)](https://github.com/Haseebullah-Shaikh-official)
+- [Huzaifa Waseem](https://github.com/Huzaifawaseem)
+- [Hammad Irshad](https://github.com/hammadirshad19)
+- [Hamza Asim](https://github.com/hamzaasim3639)
+- [Humza Moeen](https://github.com/MHumza1731)
 
-### Testing Transformation approach 01 : Responsible persons
-Testing is implemented by Haseebullah and Hammad Irshad
 
-## Expose Api Service: Responsible Person
-Implemented and refactored by Haseebullah.
-
-## Expose Api test: Responsible Person
-Implemented by Humza Asim and Haseebullah
 
 ## References
 https://spark.apache.org/docs/latest/api/python/reference/pyspark.sql/functions.html
@@ -48,10 +50,8 @@ https://www.dataquest.io/blog/python-api-tutorial/ https://realpython.com/python
 https://apscheduler.readthedocs.io/en/3.x/
 https://apscheduler.readthedocs.io/en/latest/modules/events.html#module-apscheduler.events
 https://realpython.com/python-requests/
-Chatgpt: Used for discussion, builtin functions concepts, description and comparison
 https://realpython.com/python-requests/
 https://medium.com/@arturocuicas/fastapi-with-postgresql-part-1-70a3960fb6ee
 https://docs.python.org/3/library/unittest.mock.html
 https://pypi.org/project/testing.postgresql/
-Chatgpt for understange how we can mock a database connection.
 Grzegorz Jurdzinski testing examples.
