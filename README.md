@@ -1,7 +1,7 @@
 ## Outcome Predictions
 
 ### Problem Statement
-- Our goal is to optimize the process of finding an ideal councillor for patients, ensuring:
+Our goal is to optimize the process of finding an ideal councillor for patients, ensuring:
 - **Increased Success**
 - **Affordability**
 - **Minimal Time Investment**
